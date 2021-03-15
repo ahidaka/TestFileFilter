@@ -16,6 +16,11 @@ Environment:
 
 #include <fltKernel.h>
 #include <dontuse.h>
+#include <suppress.h>
+//#include <ntddk.h>
+#include <EvnTrace.h>
+#include "trace.h"
+#include "TestFileFilter.tmh"
 
 #pragma prefast(disable:__WARNING_ENCODE_MEMBER_FUNCTION_POINTER, "Not valid for kernel mode drivers")
 
@@ -23,16 +28,11 @@ Environment:
 PFLT_FILTER gFilterHandle;
 ULONG_PTR OperationStatusCtx = 1;
 
-#define PTDBG_TRACE_ROUTINES            0x00000001
-#define PTDBG_TRACE_OPERATION_STATUS    0x00000002
-
-ULONG gTraceFlags = 0;
-
-
-#define PT_DBG_PRINT( _dbgLevel, _string )          \
-    (FlagOn(gTraceFlags,(_dbgLevel)) ?              \
-        DbgPrint _string :                          \
-        ((int)0))
+// TRACE_LEVEL_CRITICAL    1
+// TRACE_LEVEL_ERROR       2
+// TRACE_LEVEL_WARNING     3
+// TRACE_LEVEL_INFORMATION 4
+// TRACE_LEVEL_VERBOSE     5
 
 /*************************************************************************
     Prototypes
@@ -401,8 +401,8 @@ Return Value:
 
     PAGED_CODE();
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("TestFileFilter!TestFileFilterInstanceSetup: Entered\n") );
+    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_FILTER,
+                  "TestFileFilter!TestFileFilterInstanceSetup: Entered");
 
     return STATUS_SUCCESS;
 }
@@ -443,8 +443,8 @@ Return Value:
 
     PAGED_CODE();
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("TestFileFilter!TestFileFilterInstanceQueryTeardown: Entered\n") );
+    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_FILTER,
+                  "TestFileFilter!TestFileFilterInstanceQueryTeardown: Entered");
 
     return STATUS_SUCCESS;
 }
@@ -479,8 +479,8 @@ Return Value:
 
     PAGED_CODE();
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("TestFileFilter!TestFileFilterInstanceTeardownStart: Entered\n") );
+    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_FILTER,
+                  "TestFileFilter!TestFileFilterInstanceTeardownStart: Entered");
 }
 
 
@@ -513,8 +513,8 @@ Return Value:
 
     PAGED_CODE();
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("TestFileFilter!TestFileFilterInstanceTeardownComplete: Entered\n") );
+    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_FILTER,
+                  "TestFileFilter!TestFileFilterInstanceTeardownComplete: Entered");
 }
 
 
@@ -550,10 +550,13 @@ Return Value:
 {
     NTSTATUS status;
 
-    UNREFERENCED_PARAMETER( RegistryPath );
+    //
+    // Initialize WPP Tracing
+    //
+    WPP_INIT_TRACING(DriverObject, RegistryPath);
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("TestFileFilter!DriverEntry: Entered\n") );
+    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_FILTER,
+                  "TestFileFilter!DriverEntry: Entered");
 
     //
     //  Register with FltMgr to tell it our callback routines
@@ -609,8 +612,8 @@ Return Value:
 
     PAGED_CODE();
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("TestFileFilter!TestFileFilterUnload: Entered\n") );
+    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_FILTER,
+                  "TestFileFilter!TestFileFilterUnload: Entered");
 
     FltUnregisterFilter( gFilterHandle );
 
@@ -657,8 +660,8 @@ Return Value:
     UNREFERENCED_PARAMETER( FltObjects );
     UNREFERENCED_PARAMETER( CompletionContext );
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("TestFileFilter!TestFileFilterPreOperation: Entered\n") );
+    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_FILTER,
+                  "TestFileFilter!TestFileFilterPreOperation: Entered");
 
     //
     //  See if this is an operation we would like the operation status
@@ -676,9 +679,9 @@ Return Value:
                                                     (PVOID)(++OperationStatusCtx) );
         if (!NT_SUCCESS(status)) {
 
-            PT_DBG_PRINT( PTDBG_TRACE_OPERATION_STATUS,
-                          ("TestFileFilter!TestFileFilterPreOperation: FltRequestOperationStatusCallback Failed, status=%08x\n",
-                           status) );
+            TraceEvents(TRACE_LEVEL_WARNING, TRACE_FILTER,
+                          "TestFileFilter!TestFileFilterPreOperation: FltRequestOperationStatusCallback Failed, status=%08x",
+                           status);
         }
     }
 
@@ -733,16 +736,16 @@ Return Value:
 {
     UNREFERENCED_PARAMETER( FltObjects );
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("TestFileFilter!TestFileFilterOperationStatusCallback: Entered\n") );
+    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_FILTER,
+                  "TestFileFilter!TestFileFilterOperationStatusCallback: Entered");
 
-    PT_DBG_PRINT( PTDBG_TRACE_OPERATION_STATUS,
-                  ("TestFileFilter!TestFileFilterOperationStatusCallback: Status=%08x ctx=%p IrpMj=%02x.%02x \"%s\"\n",
+    TraceEvents(TRACE_LEVEL_WARNING, TRACE_FILTER,
+                  "TestFileFilter!TestFileFilterOperationStatusCallback: Status=%08x ctx=%p IrpMj=%02x.%02x \"%s\"",
                    OperationStatus,
                    RequesterContext,
                    ParameterSnapshot->MajorFunction,
                    ParameterSnapshot->MinorFunction,
-                   FltGetIrpName(ParameterSnapshot->MajorFunction)) );
+                   FltGetIrpName(ParameterSnapshot->MajorFunction));
 }
 
 
@@ -785,8 +788,8 @@ Return Value:
     UNREFERENCED_PARAMETER( CompletionContext );
     UNREFERENCED_PARAMETER( Flags );
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("TestFileFilter!TestFileFilterPostOperation: Entered\n") );
+    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_FILTER,
+                  "TestFileFilter!TestFileFilterPostOperation: Entered");
 
     return FLT_POSTOP_FINISHED_PROCESSING;
 }
@@ -827,8 +830,8 @@ Return Value:
     UNREFERENCED_PARAMETER( FltObjects );
     UNREFERENCED_PARAMETER( CompletionContext );
 
-    PT_DBG_PRINT( PTDBG_TRACE_ROUTINES,
-                  ("TestFileFilter!TestFileFilterPreOperationNoPostOperation: Entered\n") );
+    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_FILTER,
+                  "TestFileFilter!TestFileFilterPreOperationNoPostOperation: Entered");
 
     // This template code does not do anything with the callbackData, but
     // rather returns FLT_PREOP_SUCCESS_NO_CALLBACK.

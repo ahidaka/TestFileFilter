@@ -85,6 +85,7 @@ TestFileFilterPreOperation (
     _Flt_CompletionContext_Outptr_ PVOID *CompletionContext
     );
 
+#if 1
 VOID
 TestFileFilterOperationStatusCallback (
     _In_ PCFLT_RELATED_OBJECTS FltObjects,
@@ -92,6 +93,7 @@ TestFileFilterOperationStatusCallback (
     _In_ NTSTATUS OperationStatus,
     _In_ PVOID RequesterContext
     );
+#endif
 
 FLT_POSTOP_CALLBACK_STATUS
 TestFileFilterPostOperation (
@@ -108,10 +110,12 @@ TestFileFilterPreOperationNoPostOperation (
     _Flt_CompletionContext_Outptr_ PVOID *CompletionContext
     );
 
+#if 0 // don't use this
 BOOLEAN
 TestFileFilterDoRequestOperationStatus(
     _In_ PFLT_CALLBACK_DATA Data
     );
+#endif
 
 EXTERN_C_END
 
@@ -134,7 +138,6 @@ EXTERN_C_END
 
 CONST FLT_OPERATION_REGISTRATION Callbacks[] = {
 
-#if 0 // TODO - List all of the requests to filter.
     { IRP_MJ_CREATE,
       0,
       TestFileFilterPreOperation,
@@ -160,57 +163,7 @@ CONST FLT_OPERATION_REGISTRATION Callbacks[] = {
       TestFileFilterPreOperation,
       TestFileFilterPostOperation },
 
-    { IRP_MJ_QUERY_INFORMATION,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_SET_INFORMATION,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_QUERY_EA,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_SET_EA,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_FLUSH_BUFFERS,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_QUERY_VOLUME_INFORMATION,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_SET_VOLUME_INFORMATION,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_DIRECTORY_CONTROL,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
     { IRP_MJ_FILE_SYSTEM_CONTROL,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_DEVICE_CONTROL,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_INTERNAL_DEVICE_CONTROL,
       0,
       TestFileFilterPreOperation,
       TestFileFilterPostOperation },
@@ -220,117 +173,10 @@ CONST FLT_OPERATION_REGISTRATION Callbacks[] = {
       TestFileFilterPreOperationNoPostOperation,
       NULL },                               //post operations not supported
 
-    { IRP_MJ_LOCK_CONTROL,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
     { IRP_MJ_CLEANUP,
       0,
       TestFileFilterPreOperation,
       TestFileFilterPostOperation },
-
-    { IRP_MJ_CREATE_MAILSLOT,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_QUERY_SECURITY,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_SET_SECURITY,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_QUERY_QUOTA,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_SET_QUOTA,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_PNP,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_ACQUIRE_FOR_SECTION_SYNCHRONIZATION,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_RELEASE_FOR_SECTION_SYNCHRONIZATION,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_ACQUIRE_FOR_MOD_WRITE,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_RELEASE_FOR_MOD_WRITE,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_ACQUIRE_FOR_CC_FLUSH,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_RELEASE_FOR_CC_FLUSH,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_FAST_IO_CHECK_IF_POSSIBLE,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_NETWORK_QUERY_OPEN,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_MDL_READ,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_MDL_READ_COMPLETE,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_PREPARE_MDL_WRITE,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_MDL_WRITE_COMPLETE,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_VOLUME_MOUNT,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-    { IRP_MJ_VOLUME_DISMOUNT,
-      0,
-      TestFileFilterPreOperation,
-      TestFileFilterPostOperation },
-
-#endif // TODO
 
     { IRP_MJ_OPERATION_END }
 };
@@ -656,6 +502,10 @@ Return Value:
 --*/
 {
     NTSTATUS status;
+    PFLT_FILE_NAME_INFORMATION nameInfo = NULL;
+    //UNICODE_STRING defaultName;
+    PUNICODE_STRING nameToUse;
+    //FLT_PREOP_CALLBACK_STATUS examinedStatus = FLT_PREOP_SUCCESS_NO_CALLBACK;
 
     UNREFERENCED_PARAMETER( FltObjects );
     UNREFERENCED_PARAMETER( CompletionContext );
@@ -663,20 +513,42 @@ Return Value:
     TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_FILTER,
                   "TestFileFilter!TestFileFilterPreOperation: Entered");
 
-    //
-    //  See if this is an operation we would like the operation status
-    //  for.  If so request it.
-    //
-    //  NOTE: most filters do NOT need to do this.  You only need to make
-    //        this call if, for example, you need to know if the oplock was
-    //        actually granted.
-    //
+    if (FltObjects->FileObject != NULL) {
 
-    if (TestFileFilterDoRequestOperationStatus( Data )) {
+        status = FltRequestOperationStatusCallback(Data,
+            TestFileFilterOperationStatusCallback,
+            (PVOID)(++OperationStatusCtx));
 
-        status = FltRequestOperationStatusCallback( Data,
-                                                    TestFileFilterOperationStatusCallback,
-                                                    (PVOID)(++OperationStatusCtx) );
+        if (!NT_SUCCESS(status)) {
+
+            TraceEvents(TRACE_LEVEL_WARNING, TRACE_FILTER,
+                "PassThrough!PtPreOperationPassThrough: FltRequestOperationStatusCallback Failed, status=%08x",
+                status);
+
+            return status;
+        }
+
+        status = FltGetFileNameInformation(Data,
+            FLT_FILE_NAME_NORMALIZED |
+            FLT_FILE_NAME_QUERY_ALWAYS_ALLOW_CACHE_LOOKUP,
+            &nameInfo);
+
+    }
+    else {
+
+        //
+        //  Can't get a name when there's no file object
+        //
+
+        status = STATUS_UNSUCCESSFUL;
+
+        return status;
+    }
+
+    if (NT_SUCCESS(status)) {
+
+        nameToUse = &nameInfo->Name;
+
         if (!NT_SUCCESS(status)) {
 
             TraceEvents(TRACE_LEVEL_WARNING, TRACE_FILTER,
@@ -693,7 +565,7 @@ Return Value:
 }
 
 
-
+#if 1
 VOID
 TestFileFilterOperationStatusCallback (
     _In_ PCFLT_RELATED_OBJECTS FltObjects,
@@ -736,8 +608,8 @@ Return Value:
 {
     UNREFERENCED_PARAMETER( FltObjects );
 
-    TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_FILTER,
-                  "TestFileFilter!TestFileFilterOperationStatusCallback: Entered");
+    //TraceEvents(TRACE_LEVEL_INFORMATION, TRACE_FILTER,
+    //              "TestFileFilter!TestFileFilterOperationStatusCallback: Entered");
 
     TraceEvents(TRACE_LEVEL_WARNING, TRACE_FILTER,
                   "TestFileFilter!TestFileFilterOperationStatusCallback: Status=%08x ctx=%p IrpMj=%02x.%02x \"%s\"",
@@ -746,8 +618,9 @@ Return Value:
                    ParameterSnapshot->MajorFunction,
                    ParameterSnapshot->MinorFunction,
                    FltGetIrpName(ParameterSnapshot->MajorFunction));
-}
 
+}
+#endif
 
 FLT_POSTOP_CALLBACK_STATUS
 TestFileFilterPostOperation (
@@ -841,6 +714,7 @@ Return Value:
 }
 
 
+#if 0
 BOOLEAN
 TestFileFilterDoRequestOperationStatus(
     _In_ PFLT_CALLBACK_DATA Data
@@ -890,3 +764,4 @@ Return Value:
                (iopb->MinorFunction == IRP_MN_NOTIFY_CHANGE_DIRECTORY))
              );
 }
+#endif
